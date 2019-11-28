@@ -1,7 +1,5 @@
 import csv
 from Input import Input
-
-
 class CorpusReader:
     def __init__(self, filepath):
 

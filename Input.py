@@ -1,5 +1,6 @@
 import nltk
 from collections import OrderedDict
+from nltk.corpus import wordnet
 
 lemmatizer = nltk.stem.WordNetLemmatizer()
 
@@ -9,9 +10,11 @@ class Sentence:
         self.tokens = self.tokenize()
         self.lemmatizedTokens = self.lemmatize()
         self.pos_tags = self.POSTags()
+        self.wordToHyponyms, self.wordToHypernyms = self.wordnetComponents()
+
 
     def __str__(self):
-        return "string: " + str(self.string) + "\ntokens: " + str(self.tokens) + "\nlemmatizedTokens: " + str(self.lemmatizedTokens) + "\npos_tags" + str(self.pos_tags)
+        return "string: " + str(self.string) + "\ntokens: " + str(self.tokens) + "\nlemmatizedTokens: " + str(self.lemmatizedTokens) + "\npos_tags" + str(self.pos_tags) + "\nHyponymns" + str(self.wordToHyponyms + "\npos_tags" + str(self.wordToHypernyms))
 
     def tokenize(self, string=None):
         if not string:
@@ -32,8 +35,23 @@ class Sentence:
             lemmatizedTokens[token] = lemmatizer.lemmatize(token)
 
         return lemmatizedTokens
+    
+    def wordnetComponents(self, tokens=None):
+        if not tokens:
+            tokens = self.tokens
+        wordToHyponyms = OrderedDict
+        wordToHypernyms = OrderedDict
+        wordToMeronyms = OrderedDict
+        wordToHolonyms = OrderedDict
+        for eachToken in tokens:
+            synSets = synsets(eachToken)
+            for eachSynSet in synSets:
+                eachInterpretation = wordnet.synset(eachSynSet)
+                wordToHyponyms[eachInterpretation] = eachInterpretation.hyponyms()
+                wordToHypernyms[eachInterpretation] = eachInterpretation.hypernyms()
+        return wordToHyponyms,wordToHypernyms       
 
-
+    return wordnet.synsets(word)
 class Input:
     def __init__(self, id, s1, s2, score):
         self.id = id
