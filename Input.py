@@ -1,6 +1,7 @@
 import nltk
 from collections import OrderedDict
 
+lemmatizer = nltk.stem.WordNetLemmatizer()
 
 class Sentence:
     def __init__(self, string):
@@ -10,10 +11,7 @@ class Sentence:
         self.pos_tags = self.POSTags()
 
     def __str__(self):
-        print("string: ", self.string)
-        print("tokens: ", self.tokens)
-        print("lemmatizedTokens: ", self.lemmatizedTokens)
-        print("pos_tags", self.pos_tags)
+        return "string: " + str(self.string) + "\ntokens: " + str(self.tokens) + "\nlemmatizedTokens: " + str(self.lemmatizedTokens) + "\npos_tags" + str(self.pos_tags)
 
     def tokenize(self, string=None):
         if not string:
@@ -26,7 +24,6 @@ class Sentence:
         return nltk.pos_tag(string)
 
     def lemmatize(self, tokens=None):
-        lemmatizer = nltk.stem.WordNetLemmatizer()
         lemmatizedTokens = OrderedDict()
         if not tokens:
             tokens = self.tokens

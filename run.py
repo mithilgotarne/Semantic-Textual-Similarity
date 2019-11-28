@@ -7,9 +7,9 @@ if __name__ == "__main__":
     cr = CorpusReader(filepath)
 
     for inp in cr.getInputArray():
-        
         print(inp.sentence1)
         print(inp.sentence2)
+
 
 
 

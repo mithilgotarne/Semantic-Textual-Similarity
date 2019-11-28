@@ -7,13 +7,13 @@ class CorpusReader:
 
         self.inputObjects = {}
 
-        with open(filepath) as fp:
+        with open(filepath, encoding="utf8") as fp:
 
-            reader = csv.reader(fp, delimiter="\t")
-            next(reader)
+            next(fp)
 
-            for row in reader:
-                id, s1, s2, score = row
+            for line in fp:
+                line = line.strip()
+                id, s1, s2, score = line.split('\t')
                 inputObject = Input(id, s1, s2, score)
                 self.inputObjects[id] = inputObject
 
