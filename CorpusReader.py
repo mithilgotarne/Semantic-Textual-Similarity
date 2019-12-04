@@ -1,7 +1,5 @@
 import csv
 from Input import Input
-
-
 class CorpusReader:
     def __init__(self, filepath):
 
@@ -16,7 +14,7 @@ class CorpusReader:
                 id, s1, s2, score = line.split('\t')
                 inputObject = Input(id, s1, s2, score)
                 self.inputObjects[id] = inputObject
-
+        print(self.inputObjects["s_1"])
     def getInputArray(self):
         return self.inputObjects.values()
 
