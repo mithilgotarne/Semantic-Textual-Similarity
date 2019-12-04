@@ -10,9 +10,3 @@ if __name__ == "__main__":
         print(inp.sentence1)
         print(inp.sentence2)
 
-
-
-
-
-
-
