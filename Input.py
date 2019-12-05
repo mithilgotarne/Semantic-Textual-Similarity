@@ -2,12 +2,21 @@ import nltk
 from collections import OrderedDict
 from nltk.corpus import wordnet as wordnet
 import spacy
+from nltk.wsd import lesk
+from nltk.parse.corenlp import CoreNLPDependencyParser
+import numpy
+from nltk.corpus import stopwords
 
+
+stopWords = set(stopwords.words('english'))
 lemmatizer = nltk.stem.WordNetLemmatizer()
 model = spacy.load("en_core_web_sm")
-
+stanfordParser = r'C:\Users\chitt\Desktop\Fall2019_Semester\Natural Language Processing\stanford-parser-full-2018-10-17\stanford-parser-full-2018-10-17\stanford-parser.jar'
+modelJar = r'C:\Users\chitt\Desktop\Fall2019_Semester\Natural Language Processing\stanford-english-corenlp-2018-10-05-models.jar'
+dependency_parser = CoreNLPDependencyParser(url='http://localhost:9000')
 
 class Sentence:
+
     def __init__(self, string):
         self.string = string
         self.tokens = self.tokenize()
@@ -17,32 +26,35 @@ class Sentence:
             self.wordnetComponents()
         )
         self.dependencyTriples = self.generateDependencyParseTree(self.string)
+        self.tokenToMostProbableSynset = self.mostProbableSynset(self.string, self.tokens)
+
 
     def __str__(self):
         return (
-            "string: "
-            + str(self.string)
-            + "\n\ntokens: "
-            + str(self.tokens)
-            + "\n\nlemmatizedTokens: "
-            + str(self.lemmatizedTokens)
-            + "\n\npos_tags"
-            + str(self.pos_tags)
-            + "\n\nHyponymns"
-            + str(self.wordToHyponyms)
-            + "\n\nHypernyms: "
-            + str(self.wordToHypernyms)
-            + "\n\nParts Meronyms: "
-            + str(self.wordToPartsMeronyms)
-            + "\n\nSubstance Meronyms: "
-            + str(self.wordToSubstanceMeronyms)
-            + "\n\nParts Holonyms: "
-            + str(self.wordToPartsHolonyms)
-            + "\n\nSubstance Holonyms: "
-            + str(self.wordToSubstanceHolonyms)
-            + "\n\nDependecy Triples: "
-            + str(self.dependencyTriples)
-            + "\n\n"
+                "string: "
+                + str(self.string)
+                + "\n\ntokens: "
+                + str(self.tokens)
+                + "\n\nlemmatizedTokens: "
+                + str(self.lemmatizedTokens)
+                + "\n\npos_tags"
+                + str(self.pos_tags)
+                + "\n\nHyponymns"
+                + str(self.wordToHyponyms)
+                + "\n\nHypernyms: "
+                + str(self.wordToHypernyms)
+                + "\n\nParts Meronyms: "
+                + str(self.wordToPartsMeronyms)
+                + "\n\nSubstance Meronyms: "
+                + str(self.wordToSubstanceMeronyms)
+                + "\n\nParts Holonyms: "
+                + str(self.wordToPartsHolonyms)
+                + "\n\nSubstance Holonyms: "
+                + str(self.wordToSubstanceHolonyms)
+                + "\n\nDependecy Triples: "
+                + str(self.dependencyTriples)
+                + "\n\nMost Probable Synset: "+ str(self.tokenToMostProbableSynset)
+                + "\n\n"
         )
 
     def tokenize(self, string=None):
@@ -110,7 +122,7 @@ class Sentence:
         )
 
     def populateWordnetComponents(
-        self, wordnetComponentData, eachInterpretation, dictionaryToPopulate
+            self, wordnetComponentData, eachInterpretation, dictionaryToPopulate
     ):
         for eachItem in wordnetComponentData:
             for lemma in eachItem.lemmas():
@@ -120,7 +132,7 @@ class Sentence:
                     dictionaryToPopulate[eachInterpretation] = [lemma.name()]
 
     # Dependency Parse tree using Spacy
-    def generateDependencyParseTree(self, string=None):
+    def generateDependencyParseTreeSpacy(self, string=None):
         dependencyTriples = []
         if not string:
             string = self.string
@@ -129,6 +141,24 @@ class Sentence:
             dependencyTriples.append((token.text, token.pos_, token.dep_))
         return dependencyTriples
 
+    def generateDependencyParseTree(self, string=None):
+        if not string:
+            string = self.string
+
+        parse, = dependency_parser.raw_parse(string)
+        return list(parse.triples())
+        # print(parse)
+        # return list(parse.triples())
+
+    #Most probable synset
+    def mostProbableSynset(self, string, tokens):
+        tokenToMostProbableSynset = OrderedDict()
+        for token in tokens:
+            if token not in stopWords:
+                mostProbable = lesk(string, token)
+                if mostProbable:
+                    tokenToMostProbableSynset[token] = mostProbable
+        return tokenToMostProbableSynset
     # Synonymns and antonyms/
     # WUP similarity
 
@@ -140,3 +170,25 @@ class Input:
         self.sentence2 = Sentence(s2)
         self.score = score
 
+def similarityMatrix(sentence1, sentence2):
+    matrix = numpy.zeros(shape=(3, len(sentence1.tokenToMostProbableSynset),len(sentence2.tokenToMostProbableSynset)))
+    for i,synset1 in enumerate(sentence1.tokenToMostProbableSynset.values()):
+        for j,synset2 in enumerate(sentence2.tokenToMostProbableSynset.values()):
+            pathSimilarity = synset1.path_similarity(synset2)
+            if (synset1.pos() == synset2.pos()):
+                lchSimilarity = synset1.lch_similarity(synset2)
+            wupSimilarity = synset1.wup_similarity(synset2)
+            if pathSimilarity:
+                matrix[0][i][j] = pathSimilarity
+            if lchSimilarity:
+                matrix[1][i][j] = lchSimilarity
+            if wupSimilarity:
+                matrix[2][i][j] = wupSimilarity
+    return matrix
+
+
+if __name__ == "__main__":
+    import sys
+
+    s = Sentence(sys.argv[1])
+    print(s)
