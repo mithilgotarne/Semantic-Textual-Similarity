@@ -20,16 +20,20 @@ if __name__ == "__main__":
         # print(inp.sentence2)
 
         trainX.append(Input.similarityMatrix(inp.sentence1, inp.sentence2))
+        # print(inp.id,trainX[-1].shape)
         trainY.append(inp.score)
 
-    for inp in trainCr.getInputArray():
+    for inp in testCr.getInputArray():
         testX.append(Input.similarityMatrix(inp.sentence1, inp.sentence2))
         testY.append(inp.score)
+
+    # print(len(trainX))
+    # print(len(trainY))
 
     model = svm.SVC()
     model.fit(trainX, trainY)
     predictedScores = model.predict(testX)
-    accuracy_score(testY, predictedScores)
+    print(accuracy_score(testY, predictedScores))
 
 
 
