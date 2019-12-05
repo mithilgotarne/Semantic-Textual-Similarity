@@ -140,3 +140,10 @@ class Input:
         self.sentence2 = Sentence(s2)
         self.score = score
 
+
+if __name__ == "__main__":
+
+    import sys
+
+    s = Sentence(sys.argv[1])
+    print(s)
