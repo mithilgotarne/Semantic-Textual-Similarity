@@ -10,7 +10,7 @@ from nltk.corpus import stopwords
 
 stopWords = set(stopwords.words("english"))
 lemmatizer = nltk.stem.WordNetLemmatizer()
-# model = spacy.load("en_core_web_sm")
+spacyModel = spacy.load("en_core_web_lg")
 # stanfordParser = r'C:\Users\chitt\Desktop\Fall2019_Semester\Natural Language Processing\stanford-parser-full-2018-10-17\stanford-parser-full-2018-10-17\stanford-parser.jar'
 # modelJar = r'C:\Users\chitt\Desktop\Fall2019_Semester\Natural Language Processing\stanford-english-corenlp-2018-10-05-models.jar'
 # dependency_parser = CoreNLPDependencyParser(url='http://localhost:9000')
@@ -179,6 +179,9 @@ def similarityMatrix(sentence1, sentence2):
         len(sentence1.tokenToMostProbableSynset),
         len(sentence2.tokenToMostProbableSynset),
     )
+
+    # matrix = np.zeros(shape=(3, len(sentence1.tokenToMostProbableSynset), len(sentence2.tokenToMostProbableSynset)))
+
     matrix = np.zeros(shape=(3, dim, dim))
 
     # matrix = np.zeros(shape=(3, 100, 100))
@@ -199,10 +202,14 @@ def similarityMatrix(sentence1, sentence2):
             if wupSimilarity:
                 matrix[2][i][j] = wupSimilarity
 
+    doc1 = spacyModel(sentence1.string)
+    doc2 = spacyModel(sentence2.string)
+
     return (
         np.linalg.det(matrix[0]),
         np.linalg.det(matrix[1]),
         np.linalg.det(matrix[2]),
+        doc1.similarity(doc2),
     )
 
 

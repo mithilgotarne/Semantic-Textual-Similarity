@@ -2,7 +2,17 @@ import sys, nltk
 from CorpusReader import CorpusReader
 import Input
 from sklearn import svm
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+
+
+def trainAndPredict(model, trainX, trainY, testX, testY):
+    model.fit(trainX, trainY)
+    predictedScores = model.predict(testX)
+    print(model)
+    print(accuracy_score(testY, predictedScores))
+
 
 if __name__ == "__main__":
     filepath1 = sys.argv[1]
@@ -30,10 +40,19 @@ if __name__ == "__main__":
     # print(len(trainX))
     # print(len(trainY))
 
-    model = svm.SVC()
-    model.fit(trainX, trainY)
-    predictedScores = model.predict(testX)
-    print(accuracy_score(testY, predictedScores))
+    trainAndPredict(
+        svm.SVC(kernel="linear", C=0.025, gamma="scale"), trainX, trainY, testX, testY
+    )
 
+    trainAndPredict(MLPClassifier(alpha=1, max_iter=1000), trainX, trainY, testX, testY)
 
+    trainAndPredict(
+        RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+        trainX,
+        trainY,
+        testX,
+        testY,
+    )
+
+    trainAndPredict(AdaBoostClassifier(), trainX, trainY, testX, testY)
 
