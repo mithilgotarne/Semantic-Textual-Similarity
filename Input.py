@@ -6,6 +6,7 @@ from nltk.wsd import lesk
 from nltk.parse.corenlp import CoreNLPDependencyParser
 import numpy as np
 from nltk.corpus import stopwords
+from nltk import Tree
 
 
 stopWords = set(stopwords.words("english"))
@@ -26,9 +27,11 @@ class Sentence:
         #     self.wordnetComponents()
         # )
         # self.dependencyTriples = self.generateDependencyParseTree(self.string)
+        self.generateDependencyParseTreeSpacy(self.string)
         self.tokenToMostProbableSynset = self.mostProbableSynset(
             self.string, self.tokens
         )
+        self.tree = self.generateDependencyParseTreeSpacy(self.string)
 
     def __str__(self):
         return (
@@ -135,13 +138,23 @@ class Sentence:
 
     # Dependency Parse tree using Spacy
     def generateDependencyParseTreeSpacy(self, string=None):
-        dependencyTriples = []
         if not string:
             string = self.string
-        tree = model(string)
-        for token in tree:
-            dependencyTriples.append((token.text, token.pos_, token.dep_))
-        return dependencyTriples
+        tree = spacyModel(string)
+        # for token in tree:
+        #     dependencyTriples.append((token.text, token.pos_, token.dep_))
+        # print("Root is ", tree.head.text, " And dependency is  ", tree.dep)
+        importantContext = set()
+        for eachSubjectObject in tree:
+            if(eachSubjectObject.pos == "NOUN" or eachSubjectObject.pos == "VERB"):
+                importantContext.add(eachSubjectObject.text)
+        
+        # for each in tree:
+        #     # print("\n\nRoot is ", each.text, " And dependency is  ", each.dep_)
+        #     for child in each.children:
+        #         print("The child is ", child.text, child.pos_, child.dep_)
+        # [to_nltk_tree(each.root).pretty_print() for each in tree.sents]
+        return tree
 
     def generateDependencyParseTree(self, string=None):
         if not string:
@@ -156,10 +169,10 @@ class Sentence:
     def mostProbableSynset(self, string, tokens):
         tokenToMostProbableSynset = OrderedDict()
         for token in tokens:
-            if token not in stopWords:
-                mostProbable = lesk(string, token)
-                if mostProbable:
-                    tokenToMostProbableSynset[token] = mostProbable
+        # if token not in stopWords:
+            mostProbable = lesk(string, token)
+            if mostProbable:
+                tokenToMostProbableSynset[token] = mostProbable
         return tokenToMostProbableSynset
 
     # Synonymns and antonyms/
@@ -193,7 +206,6 @@ def similarityMatrix(sentence1, sentence2):
             lchSimilarity = None
             if synset1.pos() == synset2.pos():
                 lchSimilarity = synset1.lch_similarity(synset2)
-
             wupSimilarity = synset1.wup_similarity(synset2)
             if pathSimilarity:
                 matrix[0][i][j] = pathSimilarity
@@ -212,9 +224,74 @@ def similarityMatrix(sentence1, sentence2):
         doc1.similarity(doc2),
     )
 
+#Remove this.
+def to_nltk_tree(node):
+    if node.n_lefts + node.n_rights > 0:
+        return Tree(node.orth_, [(node.pos,to_nltk_tree(child)) for child in node.children])
+    else:
+        return node.orth_
+
+def getRoot(tree):
+    print(dir(tree))
+    for eachEntry in tree:
+        #find the root and stop
+        if(eachEntry.dep_ == "ROOT"):
+            dir(eachEntry)
+            return eachEntry
+    return None
+    
+
+def createDepParserFeatures(sentence1, sentence2):
+    treeObject1, treeObject2 = sentence1.tree, sentence2.tree
+    root1 = getRoot(treeObject1)
+    root2 = getRoot(treeObject2)
+
+    featureMatrix = []
+    traverseTree(root1, root2, sentence1, sentence2, 0, featureMatrix)
+    # featureMatrix2 = []
+    # traverseTree(root1, root2, sentence2, sentence1, 0, featureMatrix2)
+    print(featureMatrix)
+
+
+
+
+def traverseTree(root1, root2, sentence1, sentence2, level, featureMatrix):
+    print(root1.text)
+    if root1:
+        answer = [float("-inf"), float("-inf")]
+        searchInOtherTree(root1.text, root2, level, sentence1, sentence2, answer)
+        if answer is not [float("-inf"), float("-inf")]:
+            featureMatrix.append(answer)
+        for eachChild in root1:
+            traverseTree(eachChild.text, root2, sentence1, sentence2, level + 1, featureMatrix)
+
+
+        
+def searchInOtherTree(searchString, treeObject, level, sentence1, sentence2, resultList):
+
+    string1 = treeObject.text
+    synset1 = synset2 = None
+    if searchString in sentence1.tokenToMostProbableSynset:
+        synset1 = sentence1.tokenToMostProbableSynset[searchString]
+    if string1 in sentence2.tokenToMostProbableSynset:
+        synset2 = sentence2.tokenToMostProbableSynset[string1]
+    if synset1 and synset2:
+        similarity = synset1.wup_similarity(synset2)
+        if similarity > resultList[0]:
+            resultList[0] = similarity
+            resultList[1] = level
+    for eachChild in treeObject.children:
+        searchInOtherTree(searchString, eachChild, level+1, sentence1, sentence2, resultList)
+
 
 if __name__ == "__main__":
     import sys
 
-    s = Sentence(sys.argv[1])
-    print(s)
+    # s = Sentence(sys.argv[1])
+    string1 = Sentence("We often pontificate here about being the representatives of the citizens of Europe.")
+    string2 = Sentence("We are proud often here to represent the citizens of Europe.")
+    # print(string1.tokenToMostProbableSynset)
+    # print(string2.tokenToMostProbableSynset)
+    createDepParserFeatures(string1, string2)
+    # print(s)
+
